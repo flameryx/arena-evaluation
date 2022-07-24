@@ -79,9 +79,19 @@ class RecordedAverage:
 
         # TODO os.system("/bin/python3 $(pwd)/world_complexity.py --folders_path {}".format(pathToImageFolder))
         worldComplexityData = pd.read_csv("{}/map_worldcomplexity_results.csv".format(pathToImageFolder))
+        
         RecordedAverage.combineAveragesAndWorldComplexity(averagesCSVOutput,worldComplexityData, outputPath)
 
+    def cleanWorldComplexityData(worldComplexityData):
+        worldComplexityData[" distance_avg"] = worldComplexityData[" distance_avg"].replace("None","0")
+        worldComplexityData[" distance_var"] = worldComplexityData[" distance_var"].replace("[]","0")
+        worldComplexityData[" distance_norm"] = worldComplexityData[" distance_norm"].replace("[]","0")
+        return worldComplexityData
+
     def combineAveragesAndWorldComplexity(averagesData, worldComplexityData, outputPath):
+        
+        worldComplexityData = RecordedAverage.cleanWorldComplexityData(worldComplexityData)
+
         averagesData=averagesData.reset_index()
         averagesData=averagesData.drop(columns="index")
         combinedDataFrame = pd.DataFrame()
@@ -105,7 +115,7 @@ class RecordedAverage:
                 print(averagesRow["map"],"was not found")    
         
         # drop columns not necessary for the NN
-        combinedDataFrame = combinedDataFrame.drop(columns=["robot_model", "map", "World", "number_dynamic_obs", "number_static_obs"])
+        combinedDataFrame = combinedDataFrame.drop(columns=["robot_model", "map", "number_dynamic_obs", "number_static_obs"])
 
         combinedDataFrame=combinedDataFrame.rename(columns={
             "time": "episode_duration",
@@ -218,13 +228,11 @@ class RecordedAverage:
         else:
             data['done_reason'] = 0
 
-        # in case a collision has accured done_reason will be set to 0
-
         # turn boolean values to numberical ones (true = 1, false = 0)
         data["collision"] = data["collision"].astype(int)
 
+        # in case a collision has accured done_reason will be set to 0 and collision will be set to 1 for the whole episode
         exists_collision = 1 in set(data.collision)
-
         if(exists_collision):
             data['done_reason'] = 0
             data["collision"] = 1
