@@ -77,7 +77,7 @@ class RecordedAverage:
             #with open(csvFilename, 'a') as f:
             #    csvAverage.to_csv(f, mode='a', header=f.tell()==0, index=False)
 
-        os.system("/bin/python3 $(pwd)/world_complexity.py --folders_path {}".format(pathToImageFolder))
+        # TODO os.system("/bin/python3 $(pwd)/world_complexity.py --folders_path {}".format(pathToImageFolder))
         worldComplexityData = pd.read_csv("{}/map_worldcomplexity_results.csv".format(pathToImageFolder))
         RecordedAverage.combineAveragesAndWorldComplexity(averagesCSVOutput,worldComplexityData, outputPath)
 
@@ -112,6 +112,11 @@ class RecordedAverage:
             "done_reason": "success_rate",
             "collision" :"collision_rate"
             })
+
+        path = pl.Path("{}/data".format(outputPath))
+
+        path.mkdir(parents=True, exist_ok=True)
+
 
         
         csvFilename = "{}/CombinedAverages.csv".format(outputPath)
@@ -180,7 +185,7 @@ class RecordedAverage:
 
         currentRobot = data["robot_model"][0]
         currentMapName = data["map"][0]
-
+        currentEpisode = data.loc[0][0]
 
         # Drop unnecessary columns
         data = data.drop(columns=["laser_scan",
@@ -215,13 +220,15 @@ class RecordedAverage:
 
         # in case a collision has accured done_reason will be set to 0
 
-        exists_collision= 0 in data.collision
+        # turn boolean values to numberical ones (true = 1, false = 0)
+        data["collision"] = data["collision"].astype(int)
+
+        exists_collision = 1 in set(data.collision)
 
         if(exists_collision):
             data['done_reason'] = 0
+            data["collision"] = 1
 
-        # turn boolean values to numberical ones (true = 1, false = 0)
-        data["collision"] = data["collision"].astype(int)
         
         # creating new columns for the planner teb, dwa, mpc, rlca, arena, rosnav
         data["teb"] = 0
